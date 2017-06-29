@@ -33,7 +33,12 @@ class TopChartSpider(scrapy.Spider):
 
 
     def parse2(self, response):
+        self.spans = response.css('div.basicInfo table.info td span')
+
         yield {
             'lyric': response.css('div.lyricsContainer xmp::text').extract_first(),
-            'artist': response.css('div.basicInfo table.info td a::text').extract_first()
+            'artists': response.css('div.basicInfo table.info td a::text').extract(),
+            'composers': self.spans[1].css('a::text').extract(),
+            'lyricists': self.spans[4].css('a::text').extract(),
+            'arrangers': self.spans[7].css('a::text').extract()
         }
