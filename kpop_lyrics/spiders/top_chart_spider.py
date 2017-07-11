@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import scrapy
 
 class TopChartSpider(scrapy.Spider):
@@ -8,7 +10,7 @@ class TopChartSpider(scrapy.Spider):
             'http://music.bugs.co.kr/chart/'
         ]
         for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse)
+            yield scrapy.Request(url=url, callback=self.parse_chart)
 
     # def parse(self, response):
     #     page = response.url.split('/')[-2]
@@ -17,28 +19,55 @@ class TopChartSpider(scrapy.Spider):
     #         f.write(response.body)
     #     self.log('Saved file %s' % filename)
 
-    def parse(self, response):
-        # Gets list of 100 titles in chart
-        # titles = response.css('#CHARTday table tbody tr th p.title a::text').extract()
+    def parse_chart(self, response):
+        """
+        For each item (song) in the top 100 chart, this method fetches
+        the link to the info page. The info page contains information such as the artist(s), lyrics, and composer(s).
+        """
 
-        # Gets list of artists in chart
-        # But more than 100 because some collaborations -> dropdowns
-        artists = response.css('#CHARTday table tbody tr td p.artist a::text').extract()
+        # track_infos = response.css('a.trackInfo::attr(href)').extract()
+        track_infos = response.xpath('//a[contains(@class, "trackInfo")]/@href').extract()
 
-        track_infos = response.css('a.trackInfo::attr(href)').extract()
+        for info in track_infos:
+            yield scrapy.Request(info, callback=self.parse_info)
 
-        for track in track_infos:
-            yield scrapy.Request(track, callback=self.parse2)
-
-
-
-    def parse2(self, response):
+    def parse_info(self, response):
         self.spans = response.css('div.basicInfo table.info td span')
 
-        yield {
-            'lyric': response.css('div.lyricsContainer xmp::text').extract_first(),
-            'artists': response.css('div.basicInfo table.info td a::text').extract(),
-            'composers': self.spans[1].css('a::text').extract(),
-            'lyricists': self.spans[4].css('a::text').extract(),
-            'arrangers': self.spans[7].css('a::text').extract()
-        }
+        lyrics = response.xpath('//div[contains(@class, "lyricsContainer")]/xmp/text()').extract_first()
+        lyrics = lyrics.replace('\r\n', ' ')
+
+        # Not cleanly extracted because the label differs from song to song.
+        # i.e. in some songs, the first span might refer to the composers, in other songs - the album.
+        # Therefore, we need to manually parse this.
+        info = response.xpath('//div[@class="basicInfo"]/table[@class="info"]//*/text()').extract()
+
+        # Remove all newlines and tabs.
+        info = list(map(lambda x: x.strip(), info))
+
+        # Remove empty strings and commas.
+        info = list(filter(lambda x: x != '' and x != ',', info))
+
+        if '곡 정보' in info:
+            info.remove('곡 정보')
+        if '참여 정보' in info:
+            info.remove('참여 정보')
+
+        current_category = ''
+        arr = defaultdict(list)
+        for i in info:
+            if i == '아티스트' \
+                    or i == '피쳐링' \
+                    or i == '작곡' \
+                    or i == '작사' \
+                    or i == '편곡' \
+                    or i == '앨범' \
+                    or i == '재생 시간':
+                current_category = i
+            else:
+                # if current_category != '':
+                arr[current_category].append(i)
+
+        arr['가사'].append(lyrics)
+
+        yield arr
