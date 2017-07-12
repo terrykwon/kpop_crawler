@@ -32,8 +32,10 @@ class TopChartSpider(scrapy.Spider):
             yield scrapy.Request(info, callback=self.parse_info)
 
     def parse_info(self, response):
-        self.spans = response.css('div.basicInfo table.info td span')
-
+        """
+        Parses a table with information about the song.
+        Information includes the title, lyrics, composers, etc.
+        """
         title = response.xpath('//header[contains(@class,"pgTitle")]//h1/text()').extract_first().strip()
         lyrics = response.xpath('//div[contains(@class, "lyricsContainer")]/xmp/text()').extract_first()
         # lyrics = lyrics.replace('\r\n', ' ')
@@ -41,37 +43,45 @@ class TopChartSpider(scrapy.Spider):
         # Not cleanly extracted because the label differs from song to song.
         # i.e. in some songs, the first span might refer to the composers, in other songs - the album.
         # Therefore, we need to manually parse this.
-        info = response.xpath('//div[@class="basicInfo"]/table[@class="info"]//*/text()').extract()
+        raw_info = response.xpath('//div[@class="basicInfo"]/table[@class="info"]//*/text()').extract()
 
         # Remove all newlines and tabs.
-        info = list(map(lambda x: x.strip(), info))
+        raw_info = list(map(lambda x: x.strip(), raw_info))
 
         # Remove empty strings and commas.
-        info = list(filter(lambda x: x != '' and x != ',', info))
+        raw_info = list(filter(lambda x: x != '' and x != ',', raw_info))
 
-        if '곡 정보' in info:
-            info.remove('곡 정보')
-        if '참여 정보' in info:
-            info.remove('참여 정보')
-        if '전체 보기' in info:
-            info.remove('전체 보기')
+        # Remove irrelevant tags.
+        exclude = ['곡 정보', '참여 정보', '전체 보기']
+        raw_info = list(filter(lambda x: x not in exclude, raw_info))
+
+        keys = {
+            '제목': 'title',
+            '가사': 'lyrics',
+            '아티스트': 'artist',
+            '피쳐링': 'featuring',
+            '작곡': 'composer',
+            '작사': 'lyricist',
+            '편곡': 'arranger',
+            '앨범': 'album',
+            '재생 시간': 'time'
+        }
+
+        info_dict = {
+            k: [] for k in keys.values()
+        }
 
         current_category = ''
-        arr = defaultdict(list)
-        for i in info:
-            if i == '아티스트' \
-                    or i == '피쳐링' \
-                    or i == '작곡' \
-                    or i == '작사' \
-                    or i == '편곡' \
-                    or i == '앨범' \
-                    or i == '재생 시간':
-                current_category = i
-            else:
-                # if current_category != '':
-                arr[current_category].append(i)
 
-        arr['가사'].append(lyrics)
-        arr['제목'].append(title)
+        for i in raw_info:
+            if i in keys:
+                current_category = keys[i]
+                continue
 
-        yield arr
+            if current_category in keys.values():
+                info_dict[current_category].append(i)
+
+        info_dict['lyrics'].append(lyrics)
+        info_dict['title'].append(title)
+
+        yield info_dict
