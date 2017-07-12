@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import scrapy
 
 class TopChartSpider(scrapy.Spider):
