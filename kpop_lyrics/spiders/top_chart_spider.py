@@ -34,8 +34,9 @@ class TopChartSpider(scrapy.Spider):
     def parse_info(self, response):
         self.spans = response.css('div.basicInfo table.info td span')
 
+        title = response.xpath('//header[contains(@class,"pgTitle")]//h1/text()').extract_first().strip()
         lyrics = response.xpath('//div[contains(@class, "lyricsContainer")]/xmp/text()').extract_first()
-        lyrics = lyrics.replace('\r\n', ' ')
+        # lyrics = lyrics.replace('\r\n', ' ')
 
         # Not cleanly extracted because the label differs from song to song.
         # i.e. in some songs, the first span might refer to the composers, in other songs - the album.
@@ -52,6 +53,8 @@ class TopChartSpider(scrapy.Spider):
             info.remove('곡 정보')
         if '참여 정보' in info:
             info.remove('참여 정보')
+        if '전체 보기' in info:
+            info.remove('전체 보기')
 
         current_category = ''
         arr = defaultdict(list)
@@ -69,5 +72,6 @@ class TopChartSpider(scrapy.Spider):
                 arr[current_category].append(i)
 
         arr['가사'].append(lyrics)
+        arr['제목'].append(title)
 
         yield arr
