@@ -2,10 +2,12 @@ import scrapy
 
 class TopChartSpider(scrapy.Spider):
     name = 'top_chart'
+    date = '20170711'
+    unit = 'day'
 
     def start_requests(self):
         urls = [
-            'http://music.bugs.co.kr/chart/'
+            'http://music.bugs.co.kr/chart/track/' + self.unit + '/total?chartdate=' + self.date
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse_chart)
@@ -26,14 +28,15 @@ class TopChartSpider(scrapy.Spider):
         # track_infos = response.css('a.trackInfo::attr(href)').extract()
         track_infos = response.xpath('//a[contains(@class, "trackInfo")]/@href').extract()
 
-        for info in track_infos:
-            yield scrapy.Request(info, callback=self.parse_info)
+        for index, info in enumerate(track_infos):
+            yield scrapy.Request(info, meta={'rank': index + 1}, callback=self.parse_info)
 
     def parse_info(self, response):
         """
         Parses a table with information about the song.
         Information includes the title, lyrics, composers, etc.
         """
+        rank = response.meta['rank']
         title = response.xpath('//header[contains(@class,"pgTitle")]//h1/text()').extract_first().strip()
         lyrics = response.xpath('//div[contains(@class, "lyricsContainer")]/xmp/text()').extract_first()
         # lyrics = lyrics.replace('\r\n', ' ')
@@ -54,9 +57,10 @@ class TopChartSpider(scrapy.Spider):
         raw_info = list(filter(lambda x: x not in exclude, raw_info))
 
         keys = {
+            '순위': 'rank',
             '제목': 'title',
-            '가사': 'lyrics',
             '아티스트': 'artist',
+            '가사': 'lyrics',
             '피쳐링': 'featuring',
             '작곡': 'composer',
             '작사': 'lyricist',
@@ -81,5 +85,6 @@ class TopChartSpider(scrapy.Spider):
 
         info_dict['lyrics'].append(lyrics)
         info_dict['title'].append(title)
+        info_dict['rank'].append(str(rank))
 
         yield info_dict
