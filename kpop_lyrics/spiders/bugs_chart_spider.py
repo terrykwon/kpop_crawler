@@ -1,23 +1,27 @@
 import scrapy
+import datetime
 
-class TopChartSpider(scrapy.Spider):
-    name = 'top_chart'
-    date = '20170711'
-    unit = 'day'
+
+class BugsChartSpider(scrapy.Spider):
+    name = 'bugs_chart'
+    start_date = datetime.date(2017, 1, 1)
+    end_date = datetime.date(2017, 7, 13)
+    unit = 'week'
 
     def start_requests(self):
-        urls = [
-            'http://music.bugs.co.kr/chart/track/' + self.unit + '/total?chartdate=' + self.date
-        ]
-        for url in urls:
-            yield scrapy.Request(url=url, callback=self.parse_chart)
+        urls = []
 
-    # def parse(self, response):
-    #     page = response.url.split('/')[-2]
-    #     filename = 'bugs-%s.html' % page
-    #     with open(filename, 'wb') as f:
-    #         f.write(response.body)
-    #     self.log('Saved file %s' % filename)
+        date = self.start_date
+        while date <= self.end_date:
+            date_string = str(date).replace('-', '')
+            url = 'http://music.bugs.co.kr/chart/track/{}/total?chartdate={}/'.format(self.unit, date_string)
+            urls.append((date_string, url))
+
+            # Increment date to the next week.
+            date = date + datetime.timedelta(days=7)
+
+        for date, url in urls:
+            yield scrapy.Request(url=url, meta={'date': date}, callback=self.parse_chart, dont_filter=True)
 
     def parse_chart(self, response):
         """
@@ -29,7 +33,9 @@ class TopChartSpider(scrapy.Spider):
         track_infos = response.xpath('//a[contains(@class, "trackInfo")]/@href').extract()
 
         for index, info in enumerate(track_infos):
-            yield scrapy.Request(info, meta={'rank': index + 1}, callback=self.parse_info)
+            yield scrapy.Request(info,
+                                 meta={'rank': index + 1, 'date': response.meta['date']},
+                                 callback=self.parse_info, dont_filter=True)
 
     def parse_info(self, response):
         """
@@ -37,6 +43,7 @@ class TopChartSpider(scrapy.Spider):
         Information includes the title, lyrics, composers, etc.
         """
         rank = response.meta['rank']
+        date = response.meta['date']
         title = response.xpath('//header[contains(@class,"pgTitle")]//h1/text()').extract_first().strip()
         lyrics = response.xpath('//div[contains(@class, "lyricsContainer")]/xmp/text()').extract_first()
         # lyrics = lyrics.replace('\r\n', ' ')
@@ -57,6 +64,7 @@ class TopChartSpider(scrapy.Spider):
         raw_info = list(filter(lambda x: x not in exclude, raw_info))
 
         keys = {
+            '날짜': 'date',
             '순위': 'rank',
             '제목': 'title',
             '아티스트': 'artist',
@@ -86,5 +94,23 @@ class TopChartSpider(scrapy.Spider):
         info_dict['lyrics'].append(lyrics)
         info_dict['title'].append(title)
         info_dict['rank'].append(str(rank))
+        info_dict['date'].append(date)
 
         yield info_dict
+
+    def get_date_next_week(self, date):
+        """
+        Returns the date one week from now.
+        :param date: The reference point.
+        :return: The date (YYYYMMDD format).
+        """
+        year = int(date[0:4])
+        month = int(date[4:6])
+        day = int(date[6:8])
+
+        date = datetime.date(year, month, day)
+
+        next_week = date + datetime.timedelta(days=7)
+        next_week = str(next_week).replace('-', '')
+
+        return next_week
