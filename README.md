@@ -23,12 +23,12 @@ Information is scraped from the following websites:
 
 From the base directory, run the following `Scrapy` command from your terminal:
 ```
-scrapy crawl top-chart -o lyrics.csv
+scrapy crawl bugs-chart -o lyrics.csv
 ```
 
 To save the output in `JSON` format,
 ```
-scrapy crawl top-chart -o lyrics.json
+scrapy crawl bugs-chart -o lyrics.json
 ```
 
 ## Disclaimer
