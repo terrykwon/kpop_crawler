@@ -1,10 +1,11 @@
 import scrapy
 import datetime
+import re
 
 
 class BugsChartSpider(scrapy.Spider):
     name = 'bugs_chart'
-    start_date = datetime.date(2017, 1, 1)
+    start_date = datetime.date(2017, 7, 13)
     end_date = datetime.date(2017, 7, 13)
     unit = 'week'
 
@@ -30,11 +31,13 @@ class BugsChartSpider(scrapy.Spider):
         """
 
         # track_infos = response.css('a.trackInfo::attr(href)').extract()
-        track_infos = response.xpath('//a[contains(@class, "trackInfo")]/@href').extract()
+        track_info_urls = response.xpath('//a[contains(@class, "trackInfo")]/@href').extract()
 
-        for index, info in enumerate(track_infos):
-            yield scrapy.Request(info,
-                                 meta={'rank': index + 1, 'date': response.meta['date']},
+        for index, url in enumerate(track_info_urls):
+            id = re.search(r'track/(\d+)?', url).group(1)
+
+            yield scrapy.Request(url,
+                                 meta={'id': id, 'rank': index + 1, 'date': response.meta['date']},
                                  callback=self.parse_info, dont_filter=True)
 
     def parse_info(self, response):
@@ -42,6 +45,7 @@ class BugsChartSpider(scrapy.Spider):
         Parses a table with information about the song.
         Information includes the title, lyrics, composers, etc.
         """
+        id = response.meta['id']
         rank = response.meta['rank']
         date = response.meta['date']
         title = response.xpath('//header[contains(@class,"pgTitle")]//h1/text()').extract_first().strip()
@@ -66,6 +70,7 @@ class BugsChartSpider(scrapy.Spider):
         keys = {
             '날짜': 'date',
             '순위': 'rank',
+            '아이디': 'id',
             '제목': 'title',
             '아티스트': 'artist',
             '가사': 'lyrics',
@@ -95,6 +100,7 @@ class BugsChartSpider(scrapy.Spider):
         info_dict['title'].append(title)
         info_dict['rank'].append(str(rank))
         info_dict['date'].append(date)
+        info_dict['id'].append(str(id))
 
         yield info_dict
 
