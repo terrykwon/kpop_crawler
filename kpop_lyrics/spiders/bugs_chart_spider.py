@@ -5,8 +5,8 @@ import re
 
 class BugsChartSpider(scrapy.Spider):
     name = 'bugs_chart'
-    start_date = datetime.date(2017, 7, 13)
-    end_date = datetime.date(2017, 7, 13)
+    start_date = datetime.date(2017, 6, 12)  # IMPORTANT: start date must be a MONDAY
+    end_date = datetime.date(2017, 7, 3)   # IMPORTANT: end date must be a MONDAY
     unit = 'week'
 
     def start_requests(self):
@@ -15,14 +15,14 @@ class BugsChartSpider(scrapy.Spider):
         date = self.start_date
         while date <= self.end_date:
             date_string = str(date).replace('-', '')
-            url = 'http://music.bugs.co.kr/chart/track/{}/total?chartdate={}/'.format(self.unit, date_string)
+            url = 'http://music.bugs.co.kr/chart/track/{}/total?chartdate={}'.format(self.unit, date_string)
             urls.append((date_string, url))
 
             # Increment date to the next week.
             date = date + datetime.timedelta(days=7)
 
-        for date, url in urls:
-            yield scrapy.Request(url=url, meta={'date': date}, callback=self.parse_chart, dont_filter=True)
+        for d, u in urls:
+            yield scrapy.Request(url=u, meta={'date': d}, callback=self.parse_chart, dont_filter=True)
 
     def parse_chart(self, response):
         """
