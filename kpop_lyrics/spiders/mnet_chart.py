@@ -1,5 +1,4 @@
 import scrapy
-import datetime
 import re
 
 class MnetChartSpider(scrapy.Spider):
