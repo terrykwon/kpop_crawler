@@ -1,13 +1,20 @@
 import scrapy
 import re
 
+
 class MnetChartSpider(scrapy.Spider):
+    """Fetches song information and lyrics from the Mnet annual top 100 chart.
+    """
     name = 'mnet_chart'
     chart_url = 'http://www.mnet.com/chart/TOP100/{}?pNum={}'
+    start_year = 2008
+    end_year = 2016
 
     def start_requests(self):
+        """For each specified year, starts a request to the corresponding chart URL.
+        """
         urls = []
-        dates = [i for i in range(2016, 2018)]
+        dates = [i for i in range(self.start_year, self.end_year + 1)]
         for d in dates:
             for i in (1, 2):
                 urls.append((d, i, self.chart_url.format(d, i)))
@@ -16,6 +23,8 @@ class MnetChartSpider(scrapy.Spider):
             yield scrapy.Request(url=url, meta={'date': date, 'page': page}, callback=self.parse_chart)
 
     def parse_chart(self, response):
+        """For a chart, gets the list of all 100 songs and starts a request for each of them.
+        """
         print(response.meta['date'], response.meta['page'])
         page = response.meta['page']
 
@@ -35,7 +44,8 @@ class MnetChartSpider(scrapy.Spider):
                                  callback=self.parse_song_info)
 
     def parse_song_info(self, response):
-
+        """Gets relevant information from a song.
+        """
         song_info = {
             'date': int,
             'rank': int,
