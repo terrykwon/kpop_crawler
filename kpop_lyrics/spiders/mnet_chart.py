@@ -79,7 +79,7 @@ class MnetChartSpider(scrapy.Spider):
         song_info['date'] = response.meta['date']
         song_info['rank'] = response.meta['rank']
         song_info['id'] = re.split('/+', response.url)[3]
-        song_info['title'] = response.xpath('//dd[@class="title"]/text()').extract_first()
+        song_info['title'] = response.xpath('//dd[@class="title"]/text()').extract_first().strip()
 
         time = response.xpath('//dd[@class="title"]/span/text()').extract_first()
         time = time.replace('(', '').replace(')', '')
