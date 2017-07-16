@@ -10,7 +10,7 @@ class MnetChartSpider(scrapy.Spider):
     name = 'mnet_chart'
     chart_url = 'http://www.mnet.com/chart/TOP100/{}?pNum={}'
     start_year = 2008
-    end_year = 2010
+    end_year = 2016
 
     def __init__(self, *args, **kwargs):
         logger = logging.getLogger('scrapy.spidermiddlewares.httperror')
