@@ -1,5 +1,6 @@
 import scrapy
 import datetime
+import re
 
 class MnetChartSpider(scrapy.Spider):
     name = 'mnet_chart'
@@ -7,7 +8,7 @@ class MnetChartSpider(scrapy.Spider):
 
     def start_requests(self):
         urls = []
-        dates = [i for i in range(2008, 2018)]
+        dates = [i for i in range(2016, 2018)]
         for d in dates:
             for i in (1, 2):
                 urls.append((d, i, self.chart_url.format(d, i)))
@@ -34,5 +35,51 @@ class MnetChartSpider(scrapy.Spider):
                                  meta={'rank': rank, 'date': response.meta['date']},
                                  callback=self.parse_song_info)
 
-    # def parse_song_info(self, response):
-    #     print(response.meta['rank'])
+    def parse_song_info(self, response):
+
+        song_info = {
+            'date': int,
+            'rank': int,
+            'id': int,
+            'title': str,
+            'artist': str,
+            'vocals': [],
+            'featuring': [],
+            'composer': [],
+            'lyricist': [],
+            'arranger': [],
+            'time': str
+        }
+
+        song_info['date'] = response.meta['date']
+        song_info['rank'] = response.meta['rank']
+        song_info['id'] = re.split('/+', response.url)[3]
+        song_info['title'] = response.xpath('//dd[@class="title"]/text()').extract_first()
+
+        time = response.xpath('//dd[@class="title"]/span/text()').extract_first()
+        time = time.replace('(', '').replace(')', '')
+        song_info['time'] = time
+
+        song_info['artist'] = response.xpath('//dd[@class="title"]/span/a/text()').extract_first()
+
+        info_list = response.xpath('//div[@class="line_info"][2]//*/text()').extract()
+        info_list = list(filter(lambda i: '\r\n\t\t' not in i and '&nbsp' not in i, info_list))
+        info_list.remove('참여스탭')
+
+        attr_map = {
+            '보컬': 'vocals',
+            '피쳐링': 'featuring',
+            '작사': 'lyricist',
+            '작곡': 'composer',
+            '편곡': 'arranger'
+        }
+
+        current_key = ''
+        for item in info_list:
+            if item in attr_map:
+                current_key = item
+            else:
+                song_info[attr_map[current_key]].append(item)
+
+        yield song_info
+
