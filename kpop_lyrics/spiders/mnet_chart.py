@@ -1,5 +1,7 @@
 import scrapy
 import re
+import logging
+from scrapy.utils.log import configure_logging
 
 
 class MnetChartSpider(scrapy.Spider):
@@ -8,7 +10,20 @@ class MnetChartSpider(scrapy.Spider):
     name = 'mnet_chart'
     chart_url = 'http://www.mnet.com/chart/TOP100/{}?pNum={}'
     start_year = 2008
-    end_year = 2016
+    end_year = 2010
+
+    def __init__(self, *args, **kwargs):
+        logger = logging.getLogger('scrapy.spidermiddlewares.httperror')
+        logger.setLevel(logging.WARNING)
+
+        configure_logging(install_root_handler=False)
+        logging.basicConfig(
+            filename='log.txt',
+            format='%(levelname)s: %(message)s',
+            level=logging.INFO
+        )
+
+        super().__init__(*args, **kwargs)
 
     def start_requests(self):
         """For each specified year, starts a request to the corresponding chart URL.
@@ -41,7 +56,7 @@ class MnetChartSpider(scrapy.Spider):
 
             yield scrapy.Request(next_page,
                                  meta={'rank': rank, 'date': response.meta['date']},
-                                 callback=self.parse_song_info)
+                                 callback=self.parse_song_info, dont_filter=True)
 
     def parse_song_info(self, response):
         """Gets relevant information from a song.
@@ -52,6 +67,7 @@ class MnetChartSpider(scrapy.Spider):
             'id': int,
             'title': str,
             'artist': str,
+            'rap': [],
             'vocals': [],
             'featuring': [],
             'composer': [],
@@ -77,6 +93,7 @@ class MnetChartSpider(scrapy.Spider):
 
         attr_map = {
             '보컬': 'vocals',
+            '랩': 'rap',
             '피쳐링': 'featuring',
             '작사': 'lyricist',
             '작곡': 'composer',
