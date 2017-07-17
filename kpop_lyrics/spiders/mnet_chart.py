@@ -73,6 +73,7 @@ class MnetChartSpider(scrapy.Spider):
             'composer': [],
             'lyricist': [],
             'arranger': [],
+            'producer': [],
             'time': str
         }
 
@@ -97,7 +98,8 @@ class MnetChartSpider(scrapy.Spider):
             '피쳐링': 'featuring',
             '작사': 'lyricist',
             '작곡': 'composer',
-            '편곡': 'arranger'
+            '편곡': 'arranger',
+            '프로듀서': 'producer'
         }
 
         current_key = ''
