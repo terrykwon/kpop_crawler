@@ -5,3 +5,6 @@
 .ipynb
 *.pyc
 .cache/
+log.txt
+__pycache__
+*.pyc
