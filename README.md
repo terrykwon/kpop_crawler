@@ -1,11 +1,11 @@
-# kpop_lyrics
-**kpop_lyrics** is a web crawler that fetches song lyrics and other information from Korean top chart websites.
+# kpop_crawler
+**kpop_crawler** is a web crawler that fetches song details and lyrics from Korean top chart websites.
 It implements the [Scrapy](https://scrapy.org/) framework and contains spiders that extend from `scrapy.Spider`.
 
 > **Note**: This project is in its early stages and is subject to (very) frequent changes. However, feel free to use or refer to it for your own use!
 
 ## Output
-The `top_chart` spider fetches information in the following structure:
+The `bugs_chart` spider fetches information in the following structure:
 
 |*attributes*|date|rank|title|lyrics|artist|featuring|composer|lyricist|arranger|album|time|
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -14,6 +14,7 @@ The `top_chart` spider fetches information in the following structure:
 ## Sources
 Information is scraped from the following websites:
 * http://www.bugs.co.kr
+* http://www.mnet.com
 
 ## Dependencies
 * Python `v3.6`
