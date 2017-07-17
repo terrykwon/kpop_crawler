@@ -3,3 +3,5 @@
 *.json
 *.csv
 .ipynb
+*.pyc
+.cache/
