@@ -9,10 +9,10 @@
 #     http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 #     http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'kpop_lyrics'
+BOT_NAME = 'kpop_crawler'
 
-SPIDER_MODULES = ['kpop_lyrics.spiders']
-NEWSPIDER_MODULE = 'kpop_lyrics.spiders'
+SPIDER_MODULES = ['kpop_crawler.spiders']
+NEWSPIDER_MODULE = 'kpop_crawler.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
