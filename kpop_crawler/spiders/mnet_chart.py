@@ -9,8 +9,8 @@ class MnetChartSpider(scrapy.Spider):
     """
     name = 'mnet_chart'
     chart_url = 'http://www.mnet.com/chart/TOP100/{}?pNum={}'
-    start_year = 2008
-    end_year = 2016
+    start_year = 2011
+    end_year = 2011
 
     def __init__(self, *args, **kwargs):
         logger = logging.getLogger('scrapy.spidermiddlewares.httperror')
@@ -67,7 +67,6 @@ class MnetChartSpider(scrapy.Spider):
             'id': int,
             'title': str,
             'artist': str,
-            'rap': [],
             'vocals': [],
             'featuring': [],
             'composer': [],
@@ -94,19 +93,22 @@ class MnetChartSpider(scrapy.Spider):
 
         attr_map = {
             '보컬': 'vocals',
-            '랩': 'rap',
             '피쳐링': 'featuring',
             '작사': 'lyricist',
             '작곡': 'composer',
             '편곡': 'arranger',
-            '프로듀서': 'producer'
+            '프로듀서': 'producer',
         }
+
+        ignored_attr_set = {'일렉트릭 기타', '피아노', '나래이션', '코러스', '랩'}
 
         current_key = ''
         for item in info_list:
-            if item in attr_map:
+            if item in attr_map or item in ignored_attr_set:
                 current_key = item
-            else:
+                continue
+
+            if current_key in attr_map:
                 song_info[attr_map[current_key]].append(item)
 
         yield song_info
